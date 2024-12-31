@@ -19,7 +19,9 @@ config = {
         "key": "YOUR_API_KEY", # Claim your free API key here: https://www.alphavantage.co/support/#api-key
         "symbol": "IBM",
         "outputsize": "full",
-        "key_adjusted_close": "5. adjusted close",
+        # "key_adjusted_close": "5. adjusted close",
+        # Adjusted close is a premium feature, so we use close instead. To make this change less invasive, we keep the key "key_adjusted_close"
+        "key_adjusted_close": "4. close",
     },
     "data": {
         "window_size": 20,
@@ -51,8 +53,10 @@ config = {
 
 def download_data(config):
     ts = TimeSeries(key=config["alpha_vantage"]["key"])
-    data, meta_data = ts.get_daily_adjusted(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
-
+    # data, meta_data = ts.get_daily_adjusted(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
+    # # Adjusted close is a premium feature, so we use close instead. To make this change less invasive, we keep the key "key_adjusted_close"
+    data, meta_data = ts.get_daily(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
+    
     data_date = [date for date in data.keys()]
     data_date.reverse()
 
