@@ -697,3 +697,17 @@ Then, you can install all the packages used in this project with:
 ```
 pip install -r requirements.txt
 ```
+
+
+## Setting Up Local Development Environment
+
+        pip -m venv .venv
+
+        source .venv/bin/activate
+
+        pip install -r requirements.txt
+
+        cp requirements.txt requirements.txt-original
+
+        pip freeze > requirements.txt
+
