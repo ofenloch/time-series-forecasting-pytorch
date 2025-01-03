@@ -21,3 +21,6 @@ mv project-run.log ${OUTPUT_DIR}/run2
 
 # there shouldn't be any differences if we run the script in test mode
 diff -r -q ${OUTPUT_DIR}/run1 ${OUTPUT_DIR}/run2
+
+# the new restults should be the same as the ones saved before
+diff -r -q data/sanctioned-output/IBM ${OUTPUT_DIR}/run1
