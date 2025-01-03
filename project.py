@@ -1,3 +1,4 @@
+import json
 import numpy as np
 
 import torch
@@ -49,9 +50,28 @@ config = {
     }
 }
 
+def numpy_array_to_json_file(npa: np.array, filename: str):
+    # save given numpy.array to a json file
+    # see https://stackoverflow.com/questions/26646362/numpy-array-is-not-json-serializable
+    list_npa = npa.tolist()
+    with open(filename, "w") as file:
+        json.dump(list_npa, file, indent=2)
+    
+def numpy_array_to_json_string(npa: np.array) -> str:
+    # save given numpy.array to a json file
+    # see https://stackoverflow.com/questions/26646362/numpy-array-is-not-json-serializable
+    list_npa = npa.tolist()
+    return json.dumps(list_npa, indent=2)
+        
 def download_data(config):
     ts = TimeSeries(key=config["alpha_vantage"]["key"])
     data, meta_data = ts.get_daily_adjusted(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
+
+    with open("00a_data.json", "w") as file:
+        json.dump(data, file, indent=2)
+
+    with open("00b_meta_data.json", "w") as file:
+        json.dump(meta_data, file, indent=2)
 
     data_date = [date for date in data.keys()]
     data_date.reverse()
@@ -67,6 +87,10 @@ def download_data(config):
     return data_date, data_close_price, num_data_points, display_date_range
 
 data_date, data_close_price, num_data_points, display_date_range = download_data(config)
+
+with open("01a_data_date.json", "w") as file:
+    json.dump(data_date, file, indent=2)
+numpy_array_to_json_file(data_close_price, "01b_data_close_price.json")
 
 # plot
 
@@ -97,6 +121,7 @@ class Normalizer():
 # normalize
 scaler = Normalizer()
 normalized_data_close_price = scaler.fit_transform(data_close_price)
+numpy_array_to_json_file(normalized_data_close_price, "02a_normalized_data_close_price.json")
 
 def prepare_data_x(x, window_size):
     # perform windowing
@@ -116,6 +141,10 @@ def prepare_data_y(x, window_size):
 data_x, data_x_unseen = prepare_data_x(normalized_data_close_price, window_size=config["data"]["window_size"])
 data_y = prepare_data_y(normalized_data_close_price, window_size=config["data"]["window_size"])
 
+numpy_array_to_json_file(data_x, "02b_data_x.json")
+numpy_array_to_json_file(data_x_unseen, "02c_data_x_unseen.json")
+numpy_array_to_json_file(data_y, "02d_data_y.json")
+
 # split dataset
 
 split_index = int(data_y.shape[0]*config["data"]["train_split_size"])
@@ -123,6 +152,12 @@ data_x_train = data_x[:split_index]
 data_x_val = data_x[split_index:]
 data_y_train = data_y[:split_index]
 data_y_val = data_y[split_index:]
+
+numpy_array_to_json_file(data_x_train, "03a_data_x_train.json")
+numpy_array_to_json_file(data_x_val, "03b_data_x_val.json")
+numpy_array_to_json_file(data_y_train, "03c_data_y_train.json")
+numpy_array_to_json_file(data_y_val, "03d_data_y_val.json")
+
 
 # prepare data for plotting
 
@@ -169,6 +204,11 @@ dataset_val = TimeSeriesDataset(data_x_val, data_y_val)
 
 print("Train data shape", dataset_train.x.shape, dataset_train.y.shape)
 print("Validation data shape", dataset_val.x.shape, dataset_val.y.shape)
+
+numpy_array_to_json_file(dataset_train.x, "04a_dataset_train.x.json")
+numpy_array_to_json_file(dataset_train.y, "04b_dataset_train.y.json")
+numpy_array_to_json_file(dataset_val.x, "04c_dataset_val.x.json")
+numpy_array_to_json_file(dataset_val.y, "04d_dataset_val.y.json")
 
 train_dataloader = DataLoader(dataset_train, batch_size=config["training"]["batch_size"], shuffle=True)
 val_dataloader = DataLoader(dataset_val, batch_size=config["training"]["batch_size"], shuffle=True)
@@ -284,6 +324,8 @@ for idx, (x, y) in enumerate(train_dataloader):
     out = out.cpu().detach().numpy()
     predicted_train = np.concatenate((predicted_train, out))
 
+numpy_array_to_json_file(predicted_train, "05a_predicted_train.json")
+
 # predict on the validation data, to see how the model does
 
 predicted_val = np.array([])
@@ -294,6 +336,8 @@ for idx, (x, y) in enumerate(val_dataloader):
     out = out.cpu().detach().numpy()
     predicted_val = np.concatenate((predicted_val, out))
 
+numpy_array_to_json_file(predicted_val, "05a_predicted_val.json")
+
 # prepare data for plotting
 
 to_plot_data_y_train_pred = np.zeros(num_data_points)
@@ -301,6 +345,8 @@ to_plot_data_y_val_pred = np.zeros(num_data_points)
 
 to_plot_data_y_train_pred[config["data"]["window_size"]:split_index+config["data"]["window_size"]] = scaler.inverse_transform(predicted_train)
 to_plot_data_y_val_pred[split_index+config["data"]["window_size"]:] = scaler.inverse_transform(predicted_val)
+numpy_array_to_json_file(to_plot_data_y_train_pred, "05b_to_plot_data_y_train_pred.json")
+numpy_array_to_json_file(to_plot_data_y_val_pred, "05c_to_plot_data_y_val_pred.json")
 
 to_plot_data_y_train_pred = np.where(to_plot_data_y_train_pred == 0, None, to_plot_data_y_train_pred)
 to_plot_data_y_val_pred = np.where(to_plot_data_y_val_pred == 0, None, to_plot_data_y_val_pred)
@@ -346,7 +392,9 @@ model.eval()
 
 x = torch.tensor(data_x_unseen).float().to(config["training"]["device"]).unsqueeze(0).unsqueeze(2) # this is the data type and shape required, [batch, sequence, feature]
 prediction = model(x)
+numpy_array_to_json_file(prediction, "06a_prediction.json")
 prediction = prediction.cpu().detach().numpy()
+numpy_array_to_json_file(prediction, "06b_prediction.detach.numpy.json")
 
 # prepare plots
 
@@ -379,4 +427,5 @@ plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
 plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_05.png")
 
+numpy_array_to_json_file(to_plot_data_y_test_pred, "10a_to_plot_data_y_test_pred.json")
 print("Predicted close price of the next trading day:", round(to_plot_data_y_test_pred[plot_range-1], 2))
