@@ -709,5 +709,23 @@ pip install -r requirements.txt
 
         cp requirements.txt requirements.txt-original
 
-        pip freeze > requirements.txt
+If you had to install extra packages in your local environment, update `requirements.txt` with 
+`pip freeze --local --isolated > requirements.txt`.
+
+## Changes and Additions to the Original Version
+
+The API key is read from file `~/.alphavantage_apikey`.
+
+The script saves some intermediate results to JSON files. This is used for testing and debugging.
+
+There is a shell script running some calculations and comparing the results against sanctioned outputs.
+
+The script understands three command line parameters: `--file`, `--mode` and `--symbol`.
+
+With the `--symbol` switch you can select a symbol to be used, e.g. `python project.py --symbol AAPL`.
+
+With the `--file` switch you can provide a JSON file. The timeseries data will be read from that file instead of being downloaded.
+
+If the `--mode` is set to "test", all non-deterministic algorithms are disabled. This is used for testing and debugging. 
+For testing you can do something like `python project.py -m test --symbol AAPL`. See test script `test-project.sh` for details.
 
