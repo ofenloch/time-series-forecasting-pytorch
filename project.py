@@ -1,3 +1,4 @@
+import argparse
 import json
 import numpy as np
 import random
@@ -18,16 +19,32 @@ home = Path.home()
 
 file = open(f"{home}/.alphavantage_apikey")
 for line in file:
-    api_key = line
-api_key = api_key.replace("\n", "")
+    API_KEY = line
+API_KEY = API_KEY.replace("\n", "")
 
-print(f"All libraries loaded, API key is {api_key}")
+print(f"All libraries loaded, API key is {API_KEY}")
+
+################################
+# parse command line arguments #
+################################
+parser = argparse.ArgumentParser(description="Stock AI", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-s", "--symbol", default="IBM", help="the ticker symbol to be used")
+parser.add_argument("-m", "--mode", default="predict", help="program mode")
+args = parser.parse_args()
+cli_params = vars(args) 
+SYMBOL = "IBM"
+if cli_params["symbol"]:
+    SYMBOL = cli_params["symbol"]
+MODE = "predict"
+if cli_params["mode"]:
+    MODE = cli_params["mode"]
+
 
 config = {
     "alpha_vantage": {
-        "key": api_key, # Claim your free API key here: https://www.alphavantage.co/support/#api-key
-        "symbol": "IBM",
-        "mode": "test",
+        "key": API_KEY, # Claim your free API key here: https://www.alphavantage.co/support/#api-key
+        "symbol": SYMBOL,
+        "mode": MODE,
         "outputsize": "full",
         "key_adjusted_close": "5. adjusted close",
     },

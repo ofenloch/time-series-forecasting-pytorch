@@ -6,21 +6,33 @@ OUTPUT_DIR="testoutput"
 # activate Python environment
 source .venv/bin/activate
 
+## declare an array variable
+declare -a SYMBOLS=("DIA" "DOGG" "GOOGL" "IBM" "TSLA" "WMT")
 
-# first run
-mkdir -p ${OUTPUT_DIR}/run1
-python project.py &> project-run.log
-mv *.json ${OUTPUT_DIR}/run1
-mv project-run.log ${OUTPUT_DIR}/run1
+## loop through the above array
+for SYMBOL in "${SYMBOLS[@]}"
+do
+    # first run
+    mkdir -p ${OUTPUT_DIR}/${SYMBOL}-run1
+    python project.py --symbol ${SYMBOL} --mode test &> project-run.log
+    mv *.json ${OUTPUT_DIR}/${SYMBOL}-run1
+    mv figure*.png ${OUTPUT_DIR}/${SYMBOL}-run1
+    mv project-run.log ${OUTPUT_DIR}/${SYMBOL}-run1
 
-# secont run
-mkdir -p ${OUTPUT_DIR}/run2
-python project.py &> project-run.log
-mv *.json ${OUTPUT_DIR}/run2
-mv project-run.log ${OUTPUT_DIR}/run2
+    # secont run
+    mkdir -p ${OUTPUT_DIR}/${SYMBOL}-run2
+    python project.py --symbol ${SYMBOL} --mode test &> project-run.log
+    mv *.json ${OUTPUT_DIR}/${SYMBOL}-run2
+    mv figure*.png ${OUTPUT_DIR}/${SYMBOL}-run2
+    mv project-run.log ${OUTPUT_DIR}/${SYMBOL}-run2
 
-# there shouldn't be any differences if we run the script in test mode
-diff -r -q ${OUTPUT_DIR}/run1 ${OUTPUT_DIR}/run2
+    # there shouldn't be any differences if we run the script in test mode
+    diff -r -q ${OUTPUT_DIR}/${SYMBOL}-run1 ${OUTPUT_DIR}/${SYMBOL}-run2
 
-# the new restults should be the same as the ones saved before
-diff -r -q data/sanctioned-output/IBM ${OUTPUT_DIR}/run1
+    # the new restults should be the same as the ones saved before
+    diff -r -q --exclude=figure*.png data/sanctioned-output/${SYMBOL} ${OUTPUT_DIR}/${SYMBOL}-run1
+done
+
+
+
+
