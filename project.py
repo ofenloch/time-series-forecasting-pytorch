@@ -22,7 +22,7 @@ for line in file:
     API_KEY = line
 API_KEY = API_KEY.replace("\n", "")
 
-print(f"All libraries loaded, API key is {API_KEY}")
+print(f"All libraries loaded")
 
 ################################
 # parse command line arguments #
@@ -30,6 +30,7 @@ print(f"All libraries loaded, API key is {API_KEY}")
 parser = argparse.ArgumentParser(description="Stock AI", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-s", "--symbol", default="IBM", help="the ticker symbol to be used")
 parser.add_argument("-m", "--mode", default="predict", help="program mode")
+parser.add_argument("-f", "--file", help="read data from given file instead of downloading it")
 args = parser.parse_args()
 cli_params = vars(args) 
 SYMBOL = "IBM"
@@ -38,13 +39,16 @@ if cli_params["symbol"]:
 MODE = "predict"
 if cli_params["mode"]:
     MODE = cli_params["mode"]
-
-
+DATAFILE = None
+if cli_params["file"]:
+    DATAFILE = cli_params["file"]
+    
 config = {
     "alpha_vantage": {
         "key": API_KEY, # Claim your free API key here: https://www.alphavantage.co/support/#api-key
         "symbol": SYMBOL,
         "mode": MODE,
+        "datafile": DATAFILE,
         "outputsize": "full",
         "key_adjusted_close": "5. adjusted close",
     },
@@ -75,7 +79,7 @@ config = {
         "scheduler_step_size": 40,
     }
 }
-print(f'config["alpha_vantage"]["key"] is {config["alpha_vantage"]["key"]}')
+print(f'config["alpha_vantage"]["datafile"] is {config["alpha_vantage"]["datafile"]}')
 
 if config["alpha_vantage"]["mode"] == "test":
     # For testing and debugging we must remove all randomness and non-deterministic algorithms.
@@ -130,7 +134,42 @@ def download_data(config):
 
     return data_date, data_close_price, num_data_points, display_date_range
 
-data_date, data_close_price, num_data_points, display_date_range = download_data(config)
+def read_data_from_file(config):
+    with open(config["alpha_vantage"]["datafile"], "r") as f:
+        d = json.load(f)
+    
+    data = d["Time Series (Daily)"]
+    meta_data = d["Meta Data"]
+
+    json_to_be_saved = {}
+    json_to_be_saved["Meta Data"] = meta_data
+    json_to_be_saved["Time Series (Daily)"] = data
+    with open(f'00_alphavantage_TIME_SERIES_DAILY_ADJUSTED__{config["alpha_vantage"]["symbol"]}__data.json', "w") as file:
+        json.dump(json_to_be_saved, file, indent=2)    
+
+    with open("00a_data.json", "w") as file:
+        json.dump(data, file, indent=2)
+
+    with open("00b_meta_data.json", "w") as file:
+        json.dump(meta_data, file, indent=2)
+
+    data_date = [date for date in data.keys()]
+    data_date.reverse()
+
+    data_close_price = [float(data[date][config["alpha_vantage"]["key_adjusted_close"]]) for date in data.keys()]
+    data_close_price.reverse()
+    data_close_price = np.array(data_close_price)
+
+    num_data_points = len(data_date)
+    display_date_range = "from " + data_date[0] + " to " + data_date[num_data_points-1]
+    print("Number data points", num_data_points, display_date_range)
+
+    return data_date, data_close_price, num_data_points, display_date_range
+
+if [config["alpha_vantage"]["datafile"]] != None:
+    data_date, data_close_price, num_data_points, display_date_range = read_data_from_file(config)
+else:
+    data_date, data_close_price, num_data_points, display_date_range = download_data(config)
 
 with open("01a_data_date.json", "w") as file:
     json.dump(data_date, file, indent=2)
