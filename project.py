@@ -438,3 +438,11 @@ plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_05.png")
 
 numpy_array_to_json_file(to_plot_data_y_test_pred, "10a_to_plot_data_y_test_pred.json")
 print("Predicted close price of the next trading day:", round(to_plot_data_y_test_pred[plot_range-1], 2))
+
+class EncodeTensor(json.JSONEncoder, Dataset):
+    def default(self, obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.cpu().detach().numpy().tolist()
+        return super(EncodeTensor, self).default(obj)
+with open("10b_model_state_dict.json", "w") as file:
+    json.dump(model.state_dict(), file,cls=EncodeTensor)
