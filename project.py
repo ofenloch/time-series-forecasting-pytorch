@@ -88,6 +88,12 @@ def download_data(config):
     ts = TimeSeries(key=config["alpha_vantage"]["key"])
     data, meta_data = ts.get_daily_adjusted(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
 
+    json_to_be_saved = {}
+    json_to_be_saved["Meta Data"] = meta_data
+    json_to_be_saved["Time Series (Daily)"] = data
+    with open(f'data/alphavantage_TIME_SERIES_DAILY_ADJUSTED__{config["alpha_vantage"]["symbol"]}__data.json', "w") as file:
+        json.dump(json_to_be_saved, file, indent=2)    
+
     with open("00a_data.json", "w") as file:
         json.dump(data, file, indent=2)
 
