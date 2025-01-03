@@ -1,6 +1,6 @@
 import json
 import numpy as np
-
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -27,6 +27,7 @@ config = {
     "alpha_vantage": {
         "key": api_key, # Claim your free API key here: https://www.alphavantage.co/support/#api-key
         "symbol": "IBM",
+        "mode": "test",
         "outputsize": "full",
         "key_adjusted_close": "5. adjusted close",
     },
@@ -58,6 +59,17 @@ config = {
     }
 }
 print(f'config["alpha_vantage"]["key"] is {config["alpha_vantage"]["key"]}')
+
+if config["alpha_vantage"]["mode"] == "test":
+    # For testing and debugging we must remove all randomness and non-deterministic algorithms.
+    # See https://pytorch.org/docs/stable/notes/randomness.html#reproducibility
+    print("*********** TEST MODE ***********")
+    print("     disabling all randomness")
+    random.seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
+    torch.use_deterministic_algorithms(False)
+    print("*********** TEST MODE ***********")
 
 def numpy_array_to_json_file(npa: np.array, filename: str):
     # save given numpy.array to a json file
