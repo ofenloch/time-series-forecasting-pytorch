@@ -78,7 +78,7 @@ x = np.arange(0,len(xticks))
 plt.xticks(x, xticks, rotation='vertical')
 plt.title("Daily close price for " + config["alpha_vantage"]["symbol"] + ", " + display_date_range)
 plt.grid(which='major', axis='y', linestyle='--')
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_01.png")
 
 class Normalizer():
     def __init__(self):
@@ -147,7 +147,7 @@ plt.xticks(x, xticks, rotation='vertical')
 plt.title("Daily close prices for " + config["alpha_vantage"]["symbol"] + " - showing training and validation data")
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_02.png")
 
 
 class TimeSeriesDataset(Dataset):
@@ -318,7 +318,7 @@ x = np.arange(0,len(xticks))
 plt.xticks(x, xticks, rotation='vertical')
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_03.png")
 
 # prepare data for plotting the zoomed in view of the predicted prices vs. actual prices
 
@@ -338,7 +338,7 @@ xs = np.arange(0,len(xticks))
 plt.xticks(xs, xticks, rotation='vertical')
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_04.png")
 
 # predict the closing price of the next trading day
 
@@ -377,6 +377,6 @@ plt.plot(plot_date_test, to_plot_data_y_test_pred, label="Predicted price for ne
 plt.title("Predicting the close price of the next trading day")
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_05.png")
 
 print("Predicted close price of the next trading day:", round(to_plot_data_y_test_pred[plot_range-1], 2))
