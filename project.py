@@ -13,11 +13,19 @@ from matplotlib.pyplot import figure
 
 from alpha_vantage.timeseries import TimeSeries
 
-print("All libraries loaded")
+from pathlib import Path
+home = Path.home()
+
+file = open(f"{home}/.alphavantage_apikey")
+for line in file:
+    api_key = line
+api_key = api_key.replace("\n", "")
+
+print(f"All libraries loaded, API key is {api_key}")
 
 config = {
     "alpha_vantage": {
-        "key": "YOUR_API_KEY", # Claim your free API key here: https://www.alphavantage.co/support/#api-key
+        "key": api_key, # Claim your free API key here: https://www.alphavantage.co/support/#api-key
         "symbol": "IBM",
         "outputsize": "full",
         "key_adjusted_close": "5. adjusted close",
@@ -49,6 +57,7 @@ config = {
         "scheduler_step_size": 40,
     }
 }
+print(f'config["alpha_vantage"]["key"] is {config["alpha_vantage"]["key"]}')
 
 def numpy_array_to_json_file(npa: np.array, filename: str):
     # save given numpy.array to a json file
