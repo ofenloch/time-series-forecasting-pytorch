@@ -1,5 +1,5 @@
-All libraries loaded, API key is O43FB23TXRWT1Q0C
-config["alpha_vantage"]["key"] is O43FB23TXRWT1Q0C
+All libraries loaded
+config["alpha_vantage"]["datafile"] is data/alphavantage_TIME_SERIES_DAILY_ADJUSTED__DIA__data.json
 *********** TEST MODE ***********
      disabling all randomness
 *********** TEST MODE ***********
