@@ -131,3 +131,8 @@ dmypy.json
 # System Files
 Thumbs.db
 .DS_Store
+
+testoutput/
+*.csv
+*.png
+*.json

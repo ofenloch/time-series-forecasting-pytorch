@@ -1,5 +1,7 @@
+import argparse
+import json
 import numpy as np
-
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,12 +14,41 @@ from matplotlib.pyplot import figure
 
 from alpha_vantage.timeseries import TimeSeries
 
-print("All libraries loaded")
+from pathlib import Path
+home = Path.home()
 
+file = open(f"{home}/.alphavantage_apikey")
+for line in file:
+    API_KEY = line
+API_KEY = API_KEY.replace("\n", "")
+
+print(f"All libraries loaded")
+
+################################
+# parse command line arguments #
+################################
+parser = argparse.ArgumentParser(description="Stock AI", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-s", "--symbol", default="IBM", help="the ticker symbol to be used")
+parser.add_argument("-m", "--mode", default="predict", help="program mode")
+parser.add_argument("-f", "--file", help="read data from given file instead of downloading it")
+args = parser.parse_args()
+cli_params = vars(args) 
+SYMBOL = "IBM"
+if cli_params["symbol"]:
+    SYMBOL = cli_params["symbol"]
+MODE = "predict"
+if cli_params["mode"]:
+    MODE = cli_params["mode"]
+DATAFILE = None
+if cli_params["file"]:
+    DATAFILE = cli_params["file"]
+    
 config = {
     "alpha_vantage": {
-        "key": "YOUR_API_KEY", # Claim your free API key here: https://www.alphavantage.co/support/#api-key
-        "symbol": "IBM",
+        "key": API_KEY, # Claim your free API key here: https://www.alphavantage.co/support/#api-key
+        "symbol": SYMBOL,
+        "mode": MODE,
+        "datafile": DATAFILE,
         "outputsize": "full",
         # "key_adjusted_close": "5. adjusted close",
         # Adjusted close is a premium feature, so we use close instead. To make this change less invasive, we keep the key "key_adjusted_close"
@@ -50,13 +81,55 @@ config = {
         "scheduler_step_size": 40,
     }
 }
+print(f'config["alpha_vantage"]["datafile"] is {config["alpha_vantage"]["datafile"]}')
 
+if config["alpha_vantage"]["mode"] == "test":
+    # For testing and debugging we must remove all randomness and non-deterministic algorithms.
+    # See https://pytorch.org/docs/stable/notes/randomness.html#reproducibility
+    print("*********** TEST MODE ***********")
+    print("     disabling all randomness")
+    random.seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
+    torch.use_deterministic_algorithms(False)
+    print("*********** TEST MODE ***********")
+
+def numpy_array_to_json_file(npa: np.array, filename: str):
+    # save given numpy.array to a json file
+    # see https://stackoverflow.com/questions/26646362/numpy-array-is-not-json-serializable
+    list_npa = npa.tolist()
+    with open(filename, "w") as file:
+        json.dump(list_npa, file, indent=2)
+    
+def numpy_array_to_json_string(npa: np.array) -> str:
+    # save given numpy.array to a json file
+    # see https://stackoverflow.com/questions/26646362/numpy-array-is-not-json-serializable
+    list_npa = npa.tolist()
+    return json.dumps(list_npa, indent=2)
+        
 def download_data(config):
     ts = TimeSeries(key=config["alpha_vantage"]["key"])
+<<<<<<< HEAD
     # data, meta_data = ts.get_daily_adjusted(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
     # # Adjusted close is a premium feature, so we use close instead. To make this change less invasive, we keep the key "key_adjusted_close"
     data, meta_data = ts.get_daily(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
     
+=======
+    data, meta_data = ts.get_daily_adjusted(config["alpha_vantage"]["symbol"], outputsize=config["alpha_vantage"]["outputsize"])
+
+    json_to_be_saved = {}
+    json_to_be_saved["Meta Data"] = meta_data
+    json_to_be_saved["Time Series (Daily)"] = data
+    with open(f'data/alphavantage_TIME_SERIES_DAILY_ADJUSTED__{config["alpha_vantage"]["symbol"]}__data.json', "w") as file:
+        json.dump(json_to_be_saved, file, indent=2)    
+
+    with open("00a_data.json", "w") as file:
+        json.dump(data, file, indent=2)
+
+    with open("00b_meta_data.json", "w") as file:
+        json.dump(meta_data, file, indent=2)
+
+>>>>>>> main
     data_date = [date for date in data.keys()]
     data_date.reverse()
 
@@ -70,7 +143,46 @@ def download_data(config):
 
     return data_date, data_close_price, num_data_points, display_date_range
 
-data_date, data_close_price, num_data_points, display_date_range = download_data(config)
+def read_data_from_file(config):
+    with open(config["alpha_vantage"]["datafile"], "r") as f:
+        d = json.load(f)
+    
+    data = d["Time Series (Daily)"]
+    meta_data = d["Meta Data"]
+
+    json_to_be_saved = {}
+    json_to_be_saved["Meta Data"] = meta_data
+    json_to_be_saved["Time Series (Daily)"] = data
+    with open(f'00_alphavantage_TIME_SERIES_DAILY_ADJUSTED__{config["alpha_vantage"]["symbol"]}__data.json', "w") as file:
+        json.dump(json_to_be_saved, file, indent=2)    
+
+    with open("00a_data.json", "w") as file:
+        json.dump(data, file, indent=2)
+
+    with open("00b_meta_data.json", "w") as file:
+        json.dump(meta_data, file, indent=2)
+
+    data_date = [date for date in data.keys()]
+    data_date.reverse()
+
+    data_close_price = [float(data[date][config["alpha_vantage"]["key_adjusted_close"]]) for date in data.keys()]
+    data_close_price.reverse()
+    data_close_price = np.array(data_close_price)
+
+    num_data_points = len(data_date)
+    display_date_range = "from " + data_date[0] + " to " + data_date[num_data_points-1]
+    print("Number data points", num_data_points, display_date_range)
+
+    return data_date, data_close_price, num_data_points, display_date_range
+
+if [config["alpha_vantage"]["datafile"]] != None:
+    data_date, data_close_price, num_data_points, display_date_range = read_data_from_file(config)
+else:
+    data_date, data_close_price, num_data_points, display_date_range = download_data(config)
+
+with open("01a_data_date.json", "w") as file:
+    json.dump(data_date, file, indent=2)
+numpy_array_to_json_file(data_close_price, "01b_data_close_price.json")
 
 # plot
 
@@ -82,7 +194,11 @@ x = np.arange(0,len(xticks))
 plt.xticks(x, xticks, rotation='vertical')
 plt.title("Daily close price for " + config["alpha_vantage"]["symbol"] + ", " + display_date_range)
 plt.grid(which='major', axis='y', linestyle='--')
+<<<<<<< HEAD
 plt.show()
+=======
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_01.png")
+>>>>>>> main
 
 class Normalizer():
     def __init__(self):
@@ -101,6 +217,7 @@ class Normalizer():
 # normalize
 scaler = Normalizer()
 normalized_data_close_price = scaler.fit_transform(data_close_price)
+numpy_array_to_json_file(normalized_data_close_price, "02a_normalized_data_close_price.json")
 
 def prepare_data_x(x, window_size):
     # perform windowing
@@ -120,6 +237,10 @@ def prepare_data_y(x, window_size):
 data_x, data_x_unseen = prepare_data_x(normalized_data_close_price, window_size=config["data"]["window_size"])
 data_y = prepare_data_y(normalized_data_close_price, window_size=config["data"]["window_size"])
 
+numpy_array_to_json_file(data_x, "02b_data_x.json")
+numpy_array_to_json_file(data_x_unseen, "02c_data_x_unseen.json")
+numpy_array_to_json_file(data_y, "02d_data_y.json")
+
 # split dataset
 
 split_index = int(data_y.shape[0]*config["data"]["train_split_size"])
@@ -127,6 +248,12 @@ data_x_train = data_x[:split_index]
 data_x_val = data_x[split_index:]
 data_y_train = data_y[:split_index]
 data_y_val = data_y[split_index:]
+
+numpy_array_to_json_file(data_x_train, "03a_data_x_train.json")
+numpy_array_to_json_file(data_x_val, "03b_data_x_val.json")
+numpy_array_to_json_file(data_y_train, "03c_data_y_train.json")
+numpy_array_to_json_file(data_y_val, "03d_data_y_val.json")
+
 
 # prepare data for plotting
 
@@ -151,7 +278,7 @@ plt.xticks(x, xticks, rotation='vertical')
 plt.title("Daily close prices for " + config["alpha_vantage"]["symbol"] + " - showing training and validation data")
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_02.png")
 
 
 class TimeSeriesDataset(Dataset):
@@ -173,6 +300,11 @@ dataset_val = TimeSeriesDataset(data_x_val, data_y_val)
 
 print("Train data shape", dataset_train.x.shape, dataset_train.y.shape)
 print("Validation data shape", dataset_val.x.shape, dataset_val.y.shape)
+
+numpy_array_to_json_file(dataset_train.x, "04a_dataset_train.x.json")
+numpy_array_to_json_file(dataset_train.y, "04b_dataset_train.y.json")
+numpy_array_to_json_file(dataset_val.x, "04c_dataset_val.x.json")
+numpy_array_to_json_file(dataset_val.y, "04d_dataset_val.y.json")
 
 train_dataloader = DataLoader(dataset_train, batch_size=config["training"]["batch_size"], shuffle=True)
 val_dataloader = DataLoader(dataset_val, batch_size=config["training"]["batch_size"], shuffle=True)
@@ -288,6 +420,8 @@ for idx, (x, y) in enumerate(train_dataloader):
     out = out.cpu().detach().numpy()
     predicted_train = np.concatenate((predicted_train, out))
 
+numpy_array_to_json_file(predicted_train, "05a_predicted_train.json")
+
 # predict on the validation data, to see how the model does
 
 predicted_val = np.array([])
@@ -298,6 +432,8 @@ for idx, (x, y) in enumerate(val_dataloader):
     out = out.cpu().detach().numpy()
     predicted_val = np.concatenate((predicted_val, out))
 
+numpy_array_to_json_file(predicted_val, "05a_predicted_val.json")
+
 # prepare data for plotting
 
 to_plot_data_y_train_pred = np.zeros(num_data_points)
@@ -305,6 +441,8 @@ to_plot_data_y_val_pred = np.zeros(num_data_points)
 
 to_plot_data_y_train_pred[config["data"]["window_size"]:split_index+config["data"]["window_size"]] = scaler.inverse_transform(predicted_train)
 to_plot_data_y_val_pred[split_index+config["data"]["window_size"]:] = scaler.inverse_transform(predicted_val)
+numpy_array_to_json_file(to_plot_data_y_train_pred, "05b_to_plot_data_y_train_pred.json")
+numpy_array_to_json_file(to_plot_data_y_val_pred, "05c_to_plot_data_y_val_pred.json")
 
 to_plot_data_y_train_pred = np.where(to_plot_data_y_train_pred == 0, None, to_plot_data_y_train_pred)
 to_plot_data_y_val_pred = np.where(to_plot_data_y_val_pred == 0, None, to_plot_data_y_val_pred)
@@ -322,7 +460,7 @@ x = np.arange(0,len(xticks))
 plt.xticks(x, xticks, rotation='vertical')
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_03.png")
 
 # prepare data for plotting the zoomed in view of the predicted prices vs. actual prices
 
@@ -342,7 +480,7 @@ xs = np.arange(0,len(xticks))
 plt.xticks(xs, xticks, rotation='vertical')
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_04.png")
 
 # predict the closing price of the next trading day
 
@@ -350,7 +488,9 @@ model.eval()
 
 x = torch.tensor(data_x_unseen).float().to(config["training"]["device"]).unsqueeze(0).unsqueeze(2) # this is the data type and shape required, [batch, sequence, feature]
 prediction = model(x)
+numpy_array_to_json_file(prediction, "06a_prediction.json")
 prediction = prediction.cpu().detach().numpy()
+numpy_array_to_json_file(prediction, "06b_prediction.detach.numpy.json")
 
 # prepare plots
 
@@ -381,6 +521,15 @@ plt.plot(plot_date_test, to_plot_data_y_test_pred, label="Predicted price for ne
 plt.title("Predicting the close price of the next trading day")
 plt.grid(which='major', axis='y', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"figure_{config['alpha_vantage']['symbol']}_05.png")
 
+numpy_array_to_json_file(to_plot_data_y_test_pred, "10a_to_plot_data_y_test_pred.json")
 print("Predicted close price of the next trading day:", round(to_plot_data_y_test_pred[plot_range-1], 2))
+
+class EncodeTensor(json.JSONEncoder, Dataset):
+    def default(self, obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.cpu().detach().numpy().tolist()
+        return super(EncodeTensor, self).default(obj)
+with open("10b_model_state_dict.json", "w") as file:
+    json.dump(model.state_dict(), file,cls=EncodeTensor)
