@@ -33,10 +33,12 @@ do
     # there shouldn't be any differences if we run the script in test mode
     echo "   diff'ing run1 and run2 ..."
     diff -r -q ${OUTPUT_DIR}/${SYMBOL}-run1 ${OUTPUT_DIR}/${SYMBOL}-run2
+    # rename run1 directory so we can do a folder diff with VSCode's extension "Diff Folders" or similar tools
+    mv ${OUTPUT_DIR}/${SYMBOL}-run1 ${OUTPUT_DIR}/${SYMBOL}
 
     # the new restults should be the same as the ones saved before
     echo "   diff'ing sanctioned-output and run1 ..."
-    diff -r -q --exclude=figure*.png --exclude=00_alphavantage_TIME_SERIES_DAILY_ADJUSTED*.json data/sanctioned-output/${SYMBOL} ${OUTPUT_DIR}/${SYMBOL}-run1
+    diff -r -q --exclude=figure*.png --exclude=00_alphavantage_TIME_SERIES_DAILY_ADJUSTED*.json data/sanctioned-output/${SYMBOL} ${OUTPUT_DIR}/${SYMBOL}
 done
 
 
