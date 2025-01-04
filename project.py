@@ -89,7 +89,7 @@ if config["alpha_vantage"]["mode"] == "test":
     random.seed(0)
     np.random.seed(0)
     torch.manual_seed(0)
-    torch.use_deterministic_algorithms(False)
+    torch.use_deterministic_algorithms(True)
     print("*********** TEST MODE ***********")
 
 def numpy_array_to_json_file(npa: np.array, filename: str):
