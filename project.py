@@ -489,7 +489,8 @@ to_plot_data_y_test_pred = np.zeros(plot_range)
 to_plot_data_y_val[:plot_range-1] = scaler.inverse_transform(data_y_val)[-plot_range+1:]
 to_plot_data_y_val_pred[:plot_range-1] = scaler.inverse_transform(predicted_val)[-plot_range+1:]
 
-to_plot_data_y_test_pred[plot_range-1] = scaler.inverse_transform(prediction)
+# DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from ...
+to_plot_data_y_test_pred[plot_range-1] = scaler.inverse_transform(prediction)[0]
 
 to_plot_data_y_val = np.where(to_plot_data_y_val == 0, None, to_plot_data_y_val)
 to_plot_data_y_val_pred = np.where(to_plot_data_y_val_pred == 0, None, to_plot_data_y_val_pred)
