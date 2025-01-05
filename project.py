@@ -1,6 +1,7 @@
 import argparse
 import json
 import numpy as np
+import os
 import random
 import torch
 import torch.nn as nn
@@ -86,9 +87,13 @@ if config["alpha_vantage"]["mode"] == "test":
     # See https://pytorch.org/docs/stable/notes/randomness.html#reproducibility
     print("*********** TEST MODE ***********")
     print("     disabling all randomness")
-    random.seed(0)
-    np.random.seed(0)
-    torch.manual_seed(0)
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
+    os.environ["PYTHONHASHSEED"] = "42"
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.set_num_threads(1)
     torch.use_deterministic_algorithms(True)
     print("*********** TEST MODE ***********")
 
