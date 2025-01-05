@@ -166,7 +166,7 @@ def read_data_from_file(config):
 
     return data_date, data_close_price, num_data_points, display_date_range
 
-if [config["alpha_vantage"]["datafile"]] != None:
+if config["alpha_vantage"]["datafile"] != None:
     data_date, data_close_price, num_data_points, display_date_range = read_data_from_file(config)
 else:
     data_date, data_close_price, num_data_points, display_date_range = download_data(config)
